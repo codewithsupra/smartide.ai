@@ -1,9 +1,9 @@
-import { ClerkProvider } from "@clerk/nextjs";
-import { dark } from "@clerk/ui/themes";
+
 import type { Metadata } from "next";
 import { Inter,IBM_Plex_Mono} from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
+import { Providers } from "@/components/providers";
 import "./globals.css";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,17 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ClerkProvider appearance={{ theme: dark }}>
-          <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-          >
+        <Providers>
           {children}
-
-          </ThemeProvider>
-        </ClerkProvider>
+        </Providers>
       </body>
     </html>
   );
