@@ -1,6 +1,7 @@
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
+import {ProjectsList} from "@/components/projects-list";
 
 export default function Home() {
   return (
@@ -21,6 +22,7 @@ export default function Home() {
         </Suspense>
       </header>
       <Button variant="default">Destructive</Button>
+      <ProjectsList />
     </div>
   );
 }
