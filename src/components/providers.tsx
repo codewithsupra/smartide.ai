@@ -5,6 +5,7 @@ import { dark } from "@clerk/ui/themes";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toast";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -18,7 +19,7 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
           enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
+          <Toaster>{children}</Toaster>
         </ThemeProvider>
       </ConvexProviderWithClerk>
     </ClerkProvider>
