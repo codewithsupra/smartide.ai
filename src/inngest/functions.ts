@@ -1,8 +1,7 @@
 // src/inngest/functions.ts
-import { generateText } from "ai";
 import { NonRetriableError } from "inngest";
 import { inngest } from "./client";
-import { google } from "@ai-sdk/google";
+import { generateDemoText, getConversationId } from "@/lib/ai-generation";
 import { firecrawl } from "@/lib/firecrawl";
 
 const URL_REGEX = /https?:\/\/[^\s<>"']+/gi;
@@ -14,6 +13,11 @@ export const demoGenerate = inngest.createFunction(
     if (typeof prompt !== "string" || !prompt.trim()) {
       throw new NonRetriableError("A nonempty prompt is required.");
     }
+
+    // Persist the ID so retries and durable step replays use the same conversation.
+    const conversationId = await step.run("conversation-id", async () =>
+      getConversationId(event.data?.conversationId),
+    );
 
     const urls = await step.run("extract-urls", async () => {
       const matches = prompt.match(URL_REGEX) ?? [];
@@ -45,15 +49,28 @@ export const demoGenerate = inngest.createFunction(
       .join("\n\n---\n\n");
 
     const text = await step.run("generate-text", async () => {
-      const { text } = await generateText({
-        model: google("gemini-3.1-flash-lite"),
-        prompt: context
+      const { text } = await generateDemoText(
+        context
           ? `${prompt}\n\nUse the following scraped page content as context:\n\n${context}`
           : prompt,
-      });
+        conversationId,
+      );
       return text;
     });
 
     return { text };
+  },
+);
+
+export const demoError = inngest.createFunction(
+  { id: "demo-error", triggers: { event: "demo/error" } },
+  async ({ event,step}) => {
+    const message: unknown = event.data?.message;
+     await step.run("throw-error", async () => {
+      if (typeof message !== "string" || !message.trim()) {
+        throw new NonRetriableError("A nonempty message is required.");
+      }
+      throw new Error(message);
+    });
   },
 );
