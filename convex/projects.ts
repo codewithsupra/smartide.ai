@@ -11,6 +11,42 @@ const projectValidator = v.object({
   _creationTime: v.number(),
 });
 
+export const getById = query({
+  args: { id: v.id("projects") },
+  returns: v.union(projectValidator, v.null()),
+  handler: async (ctx, { id }) => {
+    const identity = await verifyAuth(ctx);
+    const project = await ctx.db.get("projects", id);
+    if(!project || project.ownerId !== identity.subject) {
+      return null;
+    }
+    return project;
+  },
+});
+
+export const rename = mutation({
+  args: { id: v.id("projects"), name: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { id, name }) => {
+    const identity = await verifyAuth(ctx);
+    const project = await ctx.db.get("projects", id);
+    if (!project || project.ownerId !== identity.subject) {
+      throw new ConvexError("Project not found.");
+    }
+
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new ConvexError("Project name cannot be empty.");
+    }
+
+    await ctx.db.patch("projects", id, {
+      name: trimmedName,
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("projects") },
   returns: v.null(),
