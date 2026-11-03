@@ -4,6 +4,13 @@ import { cn } from "@/lib/utils";
 import { Code2Icon, MonitorIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { FaGithub } from "react-icons/fa";
+import { Allotment } from "allotment";
+import { FileExplorer } from "./file-explorer/index"
+
+const MIN_SIDEBAR_WIDTH = 200;
+const MAX_SIDEBAR_WIDTH = 800;
+const DEFAULT_SIDEBAR_WIDTH = 300;
+const DEFAULT_MAIN_SIZE = 1000;
 
 const Tab = ({ label, icon, active, onClick }: {
   label: string;
@@ -59,15 +66,19 @@ export const ProjectIdView = ({ projectId }: { projectId: string }) => {
       </nav>
       <div className="relative min-h-0 flex-1 overflow-auto">
         <section hidden={activeView !== "editor"} aria-label="Code editor" className="h-full min-h-64">
-          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <div className="flex size-12 items-center justify-center rounded-xl border bg-sidebar text-muted-foreground">
-              <Code2Icon aria-hidden="true" className="size-5" />
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-sm font-medium">Code editor</h2>
-              <p className="max-w-64 text-xs leading-relaxed text-muted-foreground">Your project files will appear here.</p>
-            </div>
-          </div>
+          <Allotment defaultSizes={[DEFAULT_SIDEBAR_WIDTH, DEFAULT_MAIN_SIZE]}>
+            <Allotment.Pane
+              snap
+              minSize={MIN_SIDEBAR_WIDTH}
+              maxSize={MAX_SIDEBAR_WIDTH}
+              preferredSize={DEFAULT_SIDEBAR_WIDTH}
+            >
+              <FileExplorer  projectId={projectId} />
+            </Allotment.Pane>
+            <Allotment.Pane>
+              <p>Main Editor</p>
+            </Allotment.Pane>
+          </Allotment>
         </section>
         <section hidden={activeView !== "preview"} aria-label="Project preview" className="h-full min-h-64 p-3 sm:p-5">
           <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-sidebar/40 p-6 text-center">
