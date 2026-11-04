@@ -9,6 +9,8 @@ import { useCreateFile, useCreateFolder, useFolderContents } from "@/hooks/use-f
 import { CreateInput } from "./create-input";
 import { LoadingRow } from "./loading-row";
 import { Tree } from "./tree";
+import { useEditor } from "@/features/editor/hooks/use-editor";
+import type { Id } from "../../../../../convex/_generated/dataModel";
 
 export const FileExplorer = ({ projectId }: { projectId: string }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,13 +19,15 @@ export const FileExplorer = ({ projectId }: { projectId: string }) => {
   const createFile = useCreateFile({ projectId, parentId: undefined });
   const createFolder = useCreateFolder({ projectId, parentId: undefined });
   const rootFiles = useFolderContents({ projectId, parentId: undefined });
+  const { openFile } = useEditor(projectId as Id<"projects">);
 
   const project = useProject(projectId);
 
 
   const handleCreate = async (name: string) => {
     if (creating === "file") {
-      await createFile({ name });
+      const fileId = await createFile({ name });
+      openFile(fileId);
     } else if (creating === "folder") {
       await createFolder({ name });
     } else {

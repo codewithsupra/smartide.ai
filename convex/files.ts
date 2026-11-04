@@ -275,7 +275,7 @@ export const deleteFile = mutation({
   args: {
     fileId: v.id("files"),
   },
-  returns: v.null(),
+  returns: v.array(v.id("files")),
   handler: async (ctx, { fileId }) => {
     const identity = await verifyAuth(ctx);
     const file = await ctx.db.get("files", fileId);
@@ -289,6 +289,7 @@ export const deleteFile = mutation({
     }
 
     const projectId = file.projectId;
+    const deletedIds: Id<"files">[] = [];
     async function deleteRecursively(current: Doc<"files">): Promise<void> {
       while (true) {
         const children = await ctx.db
@@ -312,10 +313,55 @@ export const deleteFile = mutation({
         await ctx.storage.delete(current.storageId);
       }
       await ctx.db.delete("files", current._id);
+      deletedIds.push(current._id);
     }
 
     await deleteRecursively(file);
     await ctx.db.patch("projects", file.projectId, { updatedAt: Date.now() });
-    return null;
+    return deletedIds;
+  },
+});
+
+
+export const getFilePath = query({
+  args: {
+    fileId: v.id("files"),
+  },
+  returns: v.array(v.object({ _id: v.id("files"), name: v.string() })),
+  handler: async (ctx, { fileId }) => {
+    const identity = await verifyAuth(ctx);
+    const file = await ctx.db.get("files", fileId);
+    if (!file) {
+      throw new ConvexError("File or folder not found.");
+    }
+
+    const project = await ctx.db.get("projects", file.projectId);
+    if (!project || project.ownerId !== identity.subject) {
+      throw new ConvexError("File or folder not found.");
+    }
+
+    const path: { _id: Id<"files">; name: string }[] = [];
+    const visited = new Set<Id<"files">>();
+    let current: Doc<"files"> = file;
+
+    while (true) {
+      if (current.projectId !== file.projectId || visited.has(current._id)) {
+        throw new ConvexError("Invalid file path.");
+      }
+      visited.add(current._id);
+      path.push({ _id: current._id, name: current.name });
+
+      if (current.parentId === undefined) {
+        break;
+      }
+
+      const parent = await ctx.db.get("files", current.parentId);
+      if (!parent || parent.type !== "folder") {
+        throw new ConvexError("Invalid file path.");
+      }
+      current = parent;
+    }
+
+    return path.reverse();
   },
 });
