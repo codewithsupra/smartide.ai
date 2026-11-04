@@ -11,6 +11,7 @@ import { CreateInput } from "./create-input";
 import { getItemPadding } from "./constants";
 import { LoadingRow } from "./loading-row";
 import { ItemIcon } from "./item-icon";
+import { useEditor } from "@/features/editor/hooks/use-editor";
 
 type TreeProps = {
   item: Doc<"files">;
@@ -25,10 +26,14 @@ export const Tree = ({ item, level, projectId }: TreeProps) => {
   const [renaming, setRenaming] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+
   const createFile = useCreateFile({ projectId, parentId: item._id });
   const createFolder = useCreateFolder({ projectId, parentId: item._id });
   const renameFile = useRenameFile();
   const deleteFile = useDeleteFile();
+
+  const { openFile, closeTab, tabState } = useEditor(item.projectId);
   const isFolder = item.type === "folder";
 
   const startCreating = (type: "file" | "folder") => {
@@ -43,7 +48,10 @@ export const Tree = ({ item, level, projectId }: TreeProps) => {
     setIsDeleting(true);
     setError(null);
     try {
-      await deleteFile({ fileId: item._id });
+      const deletedIds = await deleteFile({ fileId: item._id });
+      for (const fileId of deletedIds) {
+        closeTab(fileId);
+      }
     } catch (error) {
       setError(error instanceof ConvexError && typeof error.data === "string"
         ? error.data : "Could not delete this item. Please try again.");
@@ -83,10 +91,19 @@ export const Tree = ({ item, level, projectId }: TreeProps) => {
               <span className="truncate">{item.name}</span>
             </button>
           ) : (
-            <div className="flex min-w-0 flex-1 items-center gap-1.5" style={{ paddingLeft: getItemPadding(level, true) }} title={item.name}>
+            <button
+              type="button"
+              aria-pressed={tabState.activeTab === item._id}
+              disabled={isDeleting}
+              onClick={() => openFile(item._id, { preview: true })}
+              onDoubleClick={() => openFile(item._id)}
+              className="flex h-full min-w-0 flex-1 items-center gap-1.5 text-left aria-pressed:bg-sidebar-accent aria-pressed:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              style={{ paddingLeft: getItemPadding(level, true) }}
+              title={item.name}
+            >
               <ItemIcon name={item.name} type={item.type} />
               <span className="truncate">{item.name}</span>
-            </div>
+            </button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -123,8 +140,12 @@ export const Tree = ({ item, level, projectId }: TreeProps) => {
               type={creating}
               level={level + 1}
               onSubmit={async (name) => {
-                if (creating === "file") await createFile({ name });
-                else await createFolder({ name });
+                if (creating === "file") {
+                  const fileId = await createFile({ name });
+                  openFile(fileId);
+                } else {
+                  await createFolder({ name });
+                }
                 setCreating(null);
               }}
               onCancel={() => setCreating(null)}

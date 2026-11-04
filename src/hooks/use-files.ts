@@ -9,7 +9,6 @@ type FolderLocation = {
   projectId: string;
   parentId?: string;
 };
-
 export const useFiles = (projectId: string, initialNumItems = 50) => {
   const { isAuthenticated } = useConvexAuth();
   return usePaginatedQuery(
@@ -23,6 +22,14 @@ export const useFile = (fileId: string | null | undefined) => {
   const { isAuthenticated } = useConvexAuth();
   return useQuery(
     api.files.getFile,
+    isAuthenticated && fileId ? { fileId: fileId as Id<"files"> } : "skip",
+  );
+};
+
+export const useFilePath = (fileId: string | null | undefined) => {
+  const { isAuthenticated } = useConvexAuth();
+  return useQuery(
+    api.files.getFilePath,
     isAuthenticated && fileId ? { fileId: fileId as Id<"files"> } : "skip",
   );
 };
@@ -43,7 +50,6 @@ export const useFolderContents = (
     { initialNumItems },
   );
 };
-
 export const useCreateFile = ({ projectId, parentId }: FolderLocation) => {
   const createFile = useMutation(api.files.createFile);
   return useCallback(
@@ -74,6 +80,12 @@ export const useCreateFolder = ({ projectId, parentId }: FolderLocation) => {
 
 export const useRenameFile = () => useMutation(api.files.renameFile);
 
-export const useUpdateFile = () => useMutation(api.files.updateFile);
+export const useUpdateFile = () =>
+  useMutation(api.files.updateFile).withOptimisticUpdate((store, { fileId, content }) => {
+    const file = store.getQuery(api.files.getFile, { fileId });
+    if (file && file.type === "file" && file.storageId === undefined) {
+      store.setQuery(api.files.getFile, { fileId }, { ...file, content });
+    }
+  });
 
 export const useDeleteFile = () => useMutation(api.files.deleteFile);
