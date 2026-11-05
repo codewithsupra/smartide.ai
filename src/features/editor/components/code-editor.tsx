@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from 'react'
+import { suggestion } from "../extensions/suggestion";
 import { EditorView } from "@codemirror/view";
 import { Compartment } from "@codemirror/state";
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -9,6 +10,7 @@ import { getLanguageExtension } from "../extensions/language-ext";
 import { customSetup } from "../extensions/custom-setup";
 import { minimap } from "../extensions/minimap";
 import { indentationMarkers } from "@replit/codemirror-indentation-markers";
+import { quickEdit } from "../extensions/quick-edit";
 
 
 interface Props{
@@ -25,6 +27,8 @@ function CodeEditor({fileName, onChange, initialValue}: Props) {
 
     const languageExtension = useMemo(() => getLanguageExtension(fileName), [fileName]);
     const languageCompartment = useMemo(() => new Compartment(), []);
+    const suggestionExtension = useMemo(() => suggestion(fileName), [fileName]);
+    const suggestionCompartment = useMemo(() => new Compartment(), []);
 
     useEffect(() => {
         onChangeRef.current = onChange;
@@ -42,7 +46,9 @@ function CodeEditor({fileName, onChange, initialValue}: Props) {
                 customSetup,
                 languageCompartment.of([]),
                 minimap(),
+                suggestionCompartment.of([]),
                 indentationMarkers(),
+                quickEdit(),
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged) {
                         onChangeRef.current?.(update.state.doc.toString());
@@ -56,7 +62,13 @@ function CodeEditor({fileName, onChange, initialValue}: Props) {
             view.destroy();
             viewRef.current = null;
         };
-    }, [languageCompartment]);
+    }, [languageCompartment, suggestionCompartment]);
+
+    useEffect(() => {
+        viewRef.current?.dispatch({
+            effects: suggestionCompartment.reconfigure(suggestionExtension),
+        });
+    }, [suggestionCompartment, suggestionExtension]);
 
     useEffect(() => {
         viewRef.current?.dispatch({
