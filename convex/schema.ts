@@ -39,4 +39,33 @@ export default defineSchema({
     .index("by_parent", ["parentId"])
     .index("by_project_and_parent", ["projectId", "parentId"])
     .index("by_project_parent_name", ["projectId", "parentId", "name"]),
+
+    conversations:defineTable({
+      projectId:v.id("projects"),
+      title:v.string(),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      threadId: v.optional(v.string()),
+      pendingMessageId: v.optional(v.id("messages")),
+    }).index("by_project", ["projectId"]),
+
+    messages:defineTable({
+      conversationId: v.id("conversations"),
+      projectId:v.id("projects"),
+      senderId: v.string(),
+      content: v.string(),
+      status: v.union(
+        v.literal("processing"),
+        v.literal("completed"),
+        v.literal("cancelled"),
+        v.literal("failed"),
+      ),
+      createdAt: v.number(),
+      requestId: v.optional(v.string()),
+      promptMessageId: v.optional(v.string()),
+      generationAttempt: v.optional(v.number()),
+      error: v.optional(v.string()),
+    }).index("by_conversation", ["conversationId"])
+    .index("by_project_status", ["projectId", "status"])
+    .index("by_conversation_request", ["conversationId", "requestId"])
 });
