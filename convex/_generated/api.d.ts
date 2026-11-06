@@ -9,6 +9,10 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as chat from "../chat.js";
+import type * as chatDispatch from "../chatDispatch.js";
+import type * as chatState from "../chatState.js";
+import type * as conversations from "../conversations.js";
 import type * as files from "../files.js";
 import type * as projects from "../projects.js";
 
@@ -20,6 +24,10 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  chat: typeof chat;
+  chatDispatch: typeof chatDispatch;
+  chatState: typeof chatState;
+  conversations: typeof conversations;
   files: typeof files;
   projects: typeof projects;
 }>;
@@ -50,4 +58,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  agent: import("@convex-dev/agent/_generated/component.js").ComponentApi<"agent">;
+};
